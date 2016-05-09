@@ -13,12 +13,6 @@ import sys
 #Predefined Parameters
 FILE = "ProofOfConcept.txt"
 
-#NOTE: I realize now that I used "-1" as a sort of placeholder value throughout the code as if it would cause things to
-#error out like in C++ if I tempted to access a negative index.  Obviously I'm now realizing what a terrible mistake
-#this was.  Could easily be the casue of any finnicky bugs.
-#NOTENOTE: Upon further inspection it seems like I never actually access indices at ANY variables which I initialized at
-#a value of -1.  So I should be safe.  But I'm leaving this just in case until I'm 100% certain.
-
 class Test:
     #MEMBER VARIABLES:
     #Placeholder
@@ -28,31 +22,54 @@ class Test:
         self.numElts = 0
         self.pairs = []
 
-    #Creates and populates the relation dictionary based on number of elements.
+    #Creates and populates the relation dictionary based on number of elements (Forward direction).
     def buildDict(self):
         self.relationDict = {}
         theTot = 0
         for i in range(self.numElts - 1):
             for j in range(i + 1, self.numElts):
-                print str(theTot) + " \t" + str(i) + " \t" + str(j)
+                #print str(theTot) + " \t" + str(i) + " \t" + str(j)
                 self.relationDict[theTot] = (i,j)
                 theTot += 1
+        #print("\n")
 
     def buildSet(self, theWeights):
         #Defines an instance of the Sudoku object for the class to use
         self.sudoku = Sudoku(self.numElts)
 
+        #Goes through the voted conditions once and builds the set accordingly
         for i, weight in enumerate(theWeights):
             #defines voteInfo, a tuple describing inequality between two items
             #The first element is the greater item, the second element is the lesser one
             voteInfo = self.relationDict[weight[0]]
             if weight[1]:
-                print(str(i) + ". Choice " + str(voteInfo[0]) + " \t> \tChoice " + str(voteInfo[1]))
                 self.sudoku.oneStep(voteInfo[0], voteInfo[1])
             else:
-                print(str(i) + ". Choice " + str(voteInfo[1]) + " \t> \tChoice " + str(voteInfo[0]))
                 self.sudoku.oneStep(voteInfo[1], voteInfo[0])
-            print(str(self.sudoku.boxes) + "\n\n")
+            print(str(self.sudoku.getBoxes()) + "\n\n")
+
+        #If there is more specification to be done, then do so
+        remaining = self.sudoku.getItemsLeft()
+        keyNum = 0
+        while remaining:
+            pair = self.relationDict[keyNum]
+
+            #If both items in the pair are remaining,
+            if ((pair[0] in remaining) and (pair[1] in remaining)):
+                print("Running comparison on " + str(pair) + " again.")
+                if theWeights[keyNum][1]:
+                    self.sudoku.oneStep(pair[0], pair[1])
+                else:
+                    self.sudoku.oneStep(pair[1], pair[0])
+
+            #Increments keyNum, wrapping around each time it reaches the end of the dictionary
+            if keyNum >= self.numElts:
+                keyNum = 0
+            else:
+                keyNum += 1
+
+            #Updates the value of remaining
+            remaining = self.sudoku.getItemsLeft()
 
     #Set function for numElts
     def setNumElts(self, numIn):
@@ -89,17 +106,13 @@ class Sudoku:
         self.allSeen = False
 
     #Gets one step closer to figuring out the final order each time it's run with a given input
-    #Note: self.boxes is a list in descending order.  So self.boxes[0] is the highest ranked spot
+    #Self.boxes is a list in descending order.  So self.boxes[0] is the highest ranked spot
     #As a general rule, if the program hasn't seen an item yet, it will add it to one or more boxes during this function
     #If it has seen the item, it will remove it from zero or more boxes during this function.
     def oneStep(self, greater, lesser):
+        print("Choice " + str(greater) + " \t> \tChoice " + str(lesser))
         print("Pre-operation boxes: " + str(self.boxes))
-        """
-        gSeen = (greater in self.itemsSeen)
-        lSeen = (lesser in self.itemsSeen)
 
-        """
-        #This alternative setup used to cause errors.  Now it doesn't so I can probably get rid of the """comments above
         if not self.allSeen:
             gSeen = (greater in self.itemsSeen)
             lSeen = (lesser in self.itemsSeen)
@@ -107,9 +120,8 @@ class Sudoku:
             gSeen = True
             lSeen = True
 
-
         somethingNew = False
-
+        somethingRemoved = False
 
         setBounds = False
         #Checks for an invalid attempt
@@ -122,7 +134,6 @@ class Sudoku:
                 #NOTE: I have no idea whether this inequality above should contain equals or no.  I think, but uncertain
                 print("Invalid attempt detected. Returning early.")
                 return
-
 
         #If the greater value has been processed before
         if gSeen:
@@ -137,20 +148,28 @@ class Sudoku:
                 i = self.numBoxes - 1
                 while ((len(self.boxes[i]) == 1) and (self.boxes[i][0] not in self.itemsLeft)):
                     i -= 1
-                #Note: i could potentially go out of bounds for a completed list
+                #Note: This could potentially go out of bounds for a completed list
                 if greater in self.boxes[i]:
                     self.boxes[i].remove(greater)
+
+                    #This should be done whenever something is removed from self.boxes
+                    somethingRemoved = True
 
             if lSeen:
                 #Removes the lesser item from any boxes at or higher than highestG
                 for i in range(highestG + 1):
                     if lesser in self.boxes[i]:
                         self.boxes[i].remove(lesser)
+
+                        #This should be done whenever something is removed from self.boxes
+                        somethingRemoved = True
+
             else:
                 for i in range(highestG + 1, self.numBoxes):
                     self.boxes[i].append(lesser)
                 self.itemsSeen.append(lesser)
-                #NOTE: This should be done whenever something is appended to itemsSeen
+
+                #This should be done whenever something is appended to itemsSeen
                 somethingNew = True
 
         #If the lesser value has been processed before
@@ -166,20 +185,28 @@ class Sudoku:
                 i = 0
                 while ((len(self.boxes[i]) == 1) and (self.boxes[i][0] not in self.itemsLeft)):
                     i += 1
-                #Note: i could potentially go out of bounds for a completed list
+                #Note: This could potentially go out of bounds for a completed list
                 if lesser in self.boxes[i]:
                     self.boxes[i].remove(lesser)
+
+                    #This should be done whenever something is removed from self.boxes
+                    somethingRemoved = True
 
             if gSeen:
                 #Removes the greater item from any boxes at or below lowestL
                 for i in range(lowestL, self.numBoxes):
                     if greater in self.boxes[i]:
                         self.boxes[i].remove(greater)
+
+                        #This should be done whenever something is removed from self.boxes
+                        somethingRemoved = True
+
             else:
                 for i in range(lowestL - 1, -1):
                     self.boxes[i].append(greater)
                 self.itemsSeen.append(greater)
-                #NOTE: This should be done whenever something is appended to itemsSeen
+
+                #This should be done whenever something is appended to itemsSeen
                 somethingNew = True
 
         #If neither of the values have been processed before
@@ -189,19 +216,16 @@ class Sudoku:
                 (self.boxes[i+1]).append(lesser)
             (self.itemsSeen).append(greater)
             (self.itemsSeen).append(lesser)
-            #NOTE: This should be done whenever something is appended to itemsSeen
+
+            #This should be done whenever something is appended to itemsSeen
             somethingNew = True
 
         #If we just saw something new, check if we've seen everything
         if ((self.allSeen == False) and (somethingNew)):
             self.allSeen = ((len(self.itemsSeen)) == (self.numBoxes))
 
-        #If all numbers have been seen and something changed, we attempt to narrow down the search
-        #NOTE: I would have thought I could have added " and (somethingNew)" to the conditional
-        #in order to prevent extraneous cleanup checks but this seems to cause failure.
-        #NOTENOTE: Figuring out a way to skip unneeded cleans is a high priority efficiency improvement.
-        #For personal reference, such an event occurs at [6. (2 > 3)] of "Peele Frederick"
-        if self.allSeen:
+        #If all numbers have been seen and something was removed from self.boxes, we attempt to clean up
+        if ((self.allSeen) and (somethingRemoved)):
             print("Attempting to clean up the boxes")
             self.cleanup()
 
@@ -209,9 +233,9 @@ class Sudoku:
         print("Pre-cleanup boxes: " + str(self.boxes))
         leftInit = len(self.itemsLeft)
 
-        #NOTE: I don't think these 2 "-1"s should be a problem
         uniqueItem = -1
         uniqueIndex = -1
+
         #Locates and saves the position of any item that exists alone in a box
         for i, box in enumerate(self.boxes):
             if ((len(box) == 1) and (box[0] in self.itemsLeft)):
@@ -231,18 +255,7 @@ class Sudoku:
         #Each key corresponds to a 2-length list which designates:
         #(last box seen in, number of times located)
         #So if the second value is 1, then the first value is that item's only box
-        appearances = {}
-
-        #Initializes the empty dictionary to count instances of each item
-        for i in range(self.numBoxes):
-            appearances[i] = [-1,0]
-
-        #Replaces the appropriate values within the lists in appearances to keep track of information
-        for i, box in enumerate(self.boxes):
-            for j in self.itemsLeft:
-                if j in box:
-                    appearances[j][0] = i
-                    appearances[j][1] += 1
+        appearances = self.getFrequencies()
 
         #Locks in the position of any item that only exists once throughout all of boxes
         for i in range(self.numBoxes):
@@ -252,12 +265,8 @@ class Sudoku:
                 print ("Removed " + str(i) + " from self.itemsLeft")
 
         #If any progress was made throughout this function, we rerun the function until no progress is made
-        #This may seem counterintuitive since much of the code above is written in a more complicated fashion
-        #in order to offer slight efficiency savings.  However, in the long run, this allows us to have the most
-        #complete data possible when examining the hierarchy of weighted comparisons, allowing the most educated
-        #decision to be made at every point
         if len(self.itemsLeft) != leftInit:
-            print("RERUN!")
+            print("Running cleanup AGAIN!")
             self.cleanup()
         return
 
@@ -288,14 +297,51 @@ class Sudoku:
                 lowL = i
             else:
                 i -= 1
+
         #Invariant: lowL should not be -1 here EVER. If it is, major problem.
         if lowL == -1:
             print("ERROR: lowL retained value of -1")
             exit()
         return lowL
 
+    #Returns a dictionary with a key for each box.  The keys correspond to lists of length 2.
+    #Each list contains: The last (lowest) box the item is in, and the total frequency with which it
+    #appears over all of the boxes
+    #Note: Since the first list element (position) for each item is initialized as -1, one should always
+    #ensure that this element is nonnegative, as long as the second element is nonzero.
+    #Just be careful when working with this data.
+    def getFrequencies(self):
+        freqs = {}
+
+        #Initializes the empty dictionary to count instances of each item
+        for i in range(self.numBoxes):
+            freqs[i] = [-1,0]
+
+        #Replaces the appropriate values within the lists in freqs to keep track of information
+        for i, box in enumerate(self.boxes):
+            for j in self.itemsLeft:
+                if j in box:
+                    freqs[j][0] = i
+                    freqs[j][1] += 1
+
+        return freqs
+
+    #Set function for boxes
+    def setBoxes(self, boxesIn):
+        self.boxes = boxesIn
+    #Get function for boxes
+    def getBoxes(self):
+        return self.boxes
+
+    #Set function for itemsLeft
+    def setItemsLeft(self, itemsIn):
+        self.itemsLeft = itemsIn
+    #Get function for itemsLeft
+    def getItemsLeft(self):
+        return self.itemsLeft
+
 def main():
-    random.seed("Peele Frederick")
+    random.seed("Kyle Frederick")
     theTest = Test()
     fileIn(theTest)
 
@@ -306,11 +352,10 @@ def main():
     #Prints some diagnostic output useful for viewing test results.  Will remove eventually
     for elt in weightList:
         print str(elt[0]) + ". " + str(elt[1]) + "  \t" + str(theTest.getPairs()[elt[0]]) + "  \t" + str(elt[2])
+    print("\n")
 
     theTest.buildDict()
-
     theTest.buildSet(weightList)
-
 
 def fileIn(test):
     data = open(FILE, 'rb')
@@ -320,11 +365,8 @@ def fileIn(test):
     maxVotes = 0
 
     for row in reader:
-        #The first line describes the mode to use from here on out
-        #It will simply be one character: either an 'r' or an 'm'
-        #r is random mode, where the initial matrix is generated
-        #m is manual mode, where the initial matrix is specified
-        #The rest of this should probably just go in the README so I'll stop here.
+
+        #File input functionality will be described in the readme.
         if rowNum == 0:
             if row[0] == 'm':
                 manualMode = True
@@ -338,15 +380,14 @@ def fileIn(test):
             if not manualMode:
                 maxVotes = int(row[1])
 
-        #This is the functionality for populating during manual mode.
-        #It assumes perfectly correct formatting (including num lines)
-        #(So will the random mode stuff.  But I can add exceptions later).
+        #NOTE: The code to populate self.pairs in either mode assumes perfectly formatted data.
+        #Populates self.pairs for manual mode
         else:
             pair = [int(row[1]), int(row[0])]
             test.addPair(pair)
         rowNum += 1
 
-        #Populating for random mode.  Same issues.
+        #Populates self.pairs for random mode
         if not manualMode:
             for i in range(getNumMatrixRows(test.getNumElts())):
                 num1 = random.randint(0, maxVotes)

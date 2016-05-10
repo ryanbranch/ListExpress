@@ -96,6 +96,9 @@ class Sudoku:
     def __init__(self, itemCount):
         self.boxes = []
         self.numBoxes = itemCount
+        self.itemsSeen = []
+        self.allSeen = False
+        self.dontClean = []
 
         #Initializes itemsLeft as the number of items in the system
         #As positions are confirmed, the items are removed from this list
@@ -105,8 +108,6 @@ class Sudoku:
 
         for i in range(self.numBoxes):
             self.boxes.append([])
-        self.itemsSeen = []
-        self.allSeen = False
 
     #Gets one step closer to figuring out the final order each time it's run with a given input
     #Self.boxes is a list in descending order.  So self.boxes[0] is the highest ranked spot
@@ -131,12 +132,16 @@ class Sudoku:
             allSeenUpdated = False
 
             setBounds = False
-            #Checks for an invalid attempt
+
+            #One way a condition is invalid is if the highest instance of greater is below the lowest of lesser.
+            #This is only possible when all items have been seen, so we only need to check for it in that instance.
             if self.allSeen:
+                print(self.itemsSeen)
                 highestG = self.getHighestGreater(greater)
                 lowestL = self.getLowestLesser(lesser)
                 setBounds = True
                 #The truth of this boolean defines an invalid attempt, so we return early
+                #An attempt is invalid if highestG doesn't exist in a greater position than lowestL
                 if highestG >= lowestL:
                     #NOTE: I have no idea whether this inequality above should contain equals or no.  I think, but uncertain
                     print("Invalid attempt detected. Returning early.")
@@ -149,27 +154,53 @@ class Sudoku:
                 if not setBounds:
                     highestG = self.getHighestGreater(greater)
 
-                #We know that greater is higher rank than lesser, so it can't exist in the lowest unfilled spot
-                #This also only applies when lesser is in self.itemsLeft
-                if lesser in self.itemsLeft:
-                    i = self.numBoxes - 1
-                    while ((len(self.boxes[i]) == 1) and (self.boxes[i][0] not in self.itemsLeft)):
-                        i -= 1
-                    #Note: This could potentially go out of bounds for a completed list
-                    if greater in self.boxes[i]:
-                        self.boxes[i].remove(greater)
-
-                        #This should be done whenever something is removed from self.boxes
-                        somethingRemoved = True
-
-                if lSeen:
-                    #Removes the lesser item from any boxes at or higher than highestG
-                    for i in range(highestG + 1):
-                        if lesser in self.boxes[i]:
-                            self.boxes[i].remove(lesser)
+                    #We know that greater is higher rank than lesser, so it can't exist in the lowest unfilled spot
+                    #This also only applies when lesser is in self.itemsLeft
+                    if lesser in self.itemsLeft:
+                        i = self.numBoxes - 1
+                        while ((len(self.boxes[i]) == 1) and (self.boxes[i][0] not in self.itemsLeft)):
+                            i -= 1
+                        #Note: This could potentially go out of bounds for a completed list
+                        if greater in self.boxes[i]:
+                            self.boxes[i].remove(greater)
 
                             #This should be done whenever something is removed from self.boxes
                             somethingRemoved = True
+
+                if lSeen:
+                    #Removes the lesser item from any boxes at or higher than highestG
+                    #The removal of lesser can make oneStep's condition potentially invalid:
+                    #If removing  lesser from boxes would leave 2 or more boxes which contained a single instance
+                    #of the same item, then the condition of this whole function is invalid and nothing should be done
+                    #NOTE: This is a generator expression. It seems super useful and I should learn this better
+                    #This iterates through selection, which is generated on the fly as a list of all the elements in
+                    #self.boxes where that element (which is a list) contains lesser and is in the "danger zone"
+                    invalidRemoval = False
+                    matches = []
+
+                    #Finds every box that contains lesser and is in the "danger zone" for removal and is of length 2
+                    for selection in (box for i, box in enumerate(self.boxes) if
+                                      ((i <= highestG) and (lesser in box) and (len(box) == 2))):
+                        if selection[0] == lesser:
+                            if selection[0] in matches:
+                                invalidRemoval = True
+                            else:
+                                matches.append(selection[0])
+                        else:
+                            if selection[1] in matches:
+                                invalidRemoval = True
+                            else:
+                                matches.append(selection[1])
+
+                    if not invalidRemoval:
+                        for i in range(highestG + 1):
+                            if lesser in self.boxes[i]:
+                                self.boxes[i].remove(lesser)
+
+                                #This should be done whenever something is removed from self.boxes
+                                somethingRemoved = True
+                    else:
+                        print("INVALID REMOVAL ATTEMPT")
 
                 else:
                     for i in range(highestG + 1, self.numBoxes):
@@ -181,6 +212,7 @@ class Sudoku:
 
             #If the lesser value has been processed before
             if lSeen:
+                print("LSEEN")
 
                 #Calculates the value of the lowest ranked box which contains "lesser"
                 if not setBounds:
@@ -201,12 +233,35 @@ class Sudoku:
 
                 if gSeen:
                     #Removes the greater item from any boxes at or below lowestL
-                    for i in range(lowestL, self.numBoxes):
-                        if greater in self.boxes[i]:
-                            self.boxes[i].remove(greater)
+                    #The removal of greater can make oneStep's condition potentially invalid:
+                    #If removing  greater from boxes would leave 2 or more boxes which contained a single instance
+                    #of the same item, then the condition of this whole function is invalid and nothing should be done
+                    invalidRemoval = False
+                    matches = []
 
-                            #This should be done whenever something is removed from self.boxes
-                            somethingRemoved = True
+                    #Finds every box that contains greater and is in the "danger zone" for removal and is of length 2
+                    for selection in (box for i, box in enumerate(self.boxes) if
+                                      ((lowestL <= i < self.numBoxes) and(greater in box) and (len(box) == 2))):
+                        if selection[0] == greater:
+                            if selection[0] in matches:
+                                invalidRemoval = True
+                            else:
+                                matches.append(selection[0])
+                        else:
+                            if selection[1] in matches:
+                                invalidRemoval = True
+                            else:
+                                matches.append(selection[1])
+
+                    if not invalidRemoval:
+                        for i in range(lowestL, self.numBoxes):
+                            if greater in self.boxes[i]:
+                                self.boxes[i].remove(greater)
+
+                                #This should be done whenever something is removed from self.boxes
+                                somethingRemoved = True
+                    else:
+                        print("INVALID REMOVAL ATTEMPT")
 
                 else:
                     for i in range(lowestL - 1, -1, -1):
@@ -239,6 +294,9 @@ class Sudoku:
                 print("Attempting to clean up the boxes")
                 self.cleanup()
 
+                #NOTE: dontClean should always be reset after cleanup.
+                dontClean = []
+
         else:
             print("List complete. No need for modification.")
 
@@ -251,18 +309,42 @@ class Sudoku:
 
         #Locates and saves the position of any item that exists alone in a box
         for i, box in enumerate(self.boxes):
-            if ((len(box) == 1) and (box[0] in self.itemsLeft)):
+            if ((len(box) == 1) and (box[0] in self.itemsLeft) and (box[0] not in self.dontClean)):
                 uniqueItem = box[0]
                 uniqueIndex = i
 
-        #Removes any instance of the aforementioned item (if found) except in it's solo box
-        if ((uniqueIndex != -1) and (uniqueItem != -1)):
-            for i, box in enumerate(self.boxes):
-                if ((uniqueItem in box) and (i != uniqueIndex)):
-                    box.remove(uniqueItem)
-                    #print("Deleted " + str(uniqueItem) + " from box " + str(i))
-            self.itemsLeft.remove(uniqueItem)
-            print("REMOVED: " + str(uniqueItem) + " from self.itemsLeft")
+        #The removal of uniqueItem can make cleanup's condition potentially invalid:
+        #If removing  uniqueItem from boxes would leave 2 or more boxes which contained a single instance
+        #of the same item, then uniqueItem isn't removed, but instead added to a list to keep track of it
+        invalidRemoval = False
+        matches = []
+
+        #Finds every box which contains uniqueItem and one other item. Stores in matches.
+        for selection in (box for i, box in enumerate(self.boxes) if ((len(box) == 2) and (uniqueItem in box))):
+            if selection[0] == uniqueItem:
+                if selection[0] in matches:
+                    invalidRemoval = True
+                else:
+                    matches.append(selection[0])
+            else:
+                if selection[1] in matches:
+                    invalidRemoval = True
+                else:
+                    matches.append(selection[1])
+
+        #If the removal of uniqueItem is invalid, adds uniqueItem to dontClean for these rounds.
+        if(invalidRemoval):
+            self.dontClean.append(uniqueItem)
+        else:
+
+            #Removes any instance of the aforementioned item (if found) except in it's solo box
+            if ((uniqueIndex != -1) and (uniqueItem != -1)):
+                for i, box in enumerate(self.boxes):
+                    if ((uniqueItem in box) and (i != uniqueIndex)):
+                        box.remove(uniqueItem)
+                        #print("Deleted " + str(uniqueItem) + " from box " + str(i))
+                self.itemsLeft.remove(uniqueItem)
+                print("REMOVED: " + str(uniqueItem) + " from self.itemsLeft")
 
         #Appearances is a dictionary with numBoxes integer keys
         #Each key corresponds to a 2-length list which designates:
@@ -302,7 +384,7 @@ class Sudoku:
     def getLowestLesser(self, val):
         i = self.numBoxes - 1
         lowL = -1
-        while lowL == -1:
+        while ((lowL == -1) and (i >= 0)):
             #print("Looking for " + str(val) + " in")
             #print(self.boxes[i])
             #print("i = " + str(i) + "\n")

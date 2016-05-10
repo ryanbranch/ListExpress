@@ -50,26 +50,29 @@ class Test:
 
         #If there is more specification to be done, then do so
         remaining = self.sudoku.getItemsLeft()
+        print("REMAINING: " + str(remaining))
         keyNum = 0
         while remaining:
-            pair = self.relationDict[keyNum]
+            votePair = self.relationDict[keyNum]
 
             #If both items in the pair are remaining,
-            if ((pair[0] in remaining) and (pair[1] in remaining)):
-                print("Running comparison on " + str(pair) + " again.")
+            if ((votePair[0] in remaining) and (votePair[1] in remaining)):
+                #print("Running comparison on " + str(votePair) + " AGAIN.")
                 if theWeights[keyNum][1]:
-                    self.sudoku.oneStep(pair[0], pair[1])
+                    self.sudoku.oneStep(votePair[0], votePair[1])
                 else:
-                    self.sudoku.oneStep(pair[1], pair[0])
+                    self.sudoku.oneStep(votePair[1], votePair[0])
+                print("\n")
 
             #Increments keyNum, wrapping around each time it reaches the end of the dictionary
-            if keyNum >= self.numElts:
+            if (keyNum >= (getNumMatrixRows(self.numElts) - 1)):
                 keyNum = 0
             else:
                 keyNum += 1
 
             #Updates the value of remaining
             remaining = self.sudoku.getItemsLeft()
+        print("\n")
 
     #Set function for numElts
     def setNumElts(self, numIn):
@@ -111,123 +114,133 @@ class Sudoku:
     #If it has seen the item, it will remove it from zero or more boxes during this function.
     def oneStep(self, greater, lesser):
         print("Choice " + str(greater) + " \t> \tChoice " + str(lesser))
-        print("Pre-operation boxes: " + str(self.boxes))
 
-        if not self.allSeen:
-            gSeen = (greater in self.itemsSeen)
-            lSeen = (lesser in self.itemsSeen)
-        else:
-            gSeen = True
-            lSeen = True
+        #If either greater or lesser has yet to be finished, we do that
+        if ((lesser in self.itemsLeft) or (greater in self.itemsLeft)):
+            print("Pre-operation boxes: " + str(self.boxes))
 
-        somethingNew = False
-        somethingRemoved = False
-
-        setBounds = False
-        #Checks for an invalid attempt
-        if self.allSeen:
-            highestG = self.getHighestGreater(greater)
-            lowestL = self.getLowestLesser(lesser)
-            setBounds = True
-            #The truth of this boolean defines an invalid attempt, so we return early
-            if highestG >= lowestL:
-                #NOTE: I have no idea whether this inequality above should contain equals or no.  I think, but uncertain
-                print("Invalid attempt detected. Returning early.")
-                return
-
-        #If the greater value has been processed before
-        if gSeen:
-
-            #Calculates the value of the highest ranked box which contains "greater"
-            if not setBounds:
-                highestG = self.getHighestGreater(greater)
-
-            #We know that greater is higher rank than lesser, so it can't exist in the lowest unfilled spot
-            #This also only applies when lesser is in self.itemsLeft
-            if lesser in self.itemsLeft:
-                i = self.numBoxes - 1
-                while ((len(self.boxes[i]) == 1) and (self.boxes[i][0] not in self.itemsLeft)):
-                    i -= 1
-                #Note: This could potentially go out of bounds for a completed list
-                if greater in self.boxes[i]:
-                    self.boxes[i].remove(greater)
-
-                    #This should be done whenever something is removed from self.boxes
-                    somethingRemoved = True
-
-            if lSeen:
-                #Removes the lesser item from any boxes at or higher than highestG
-                for i in range(highestG + 1):
-                    if lesser in self.boxes[i]:
-                        self.boxes[i].remove(lesser)
-
-                        #This should be done whenever something is removed from self.boxes
-                        somethingRemoved = True
-
+            if not self.allSeen:
+                gSeen = (greater in self.itemsSeen)
+                lSeen = (lesser in self.itemsSeen)
             else:
-                for i in range(highestG + 1, self.numBoxes):
-                    self.boxes[i].append(lesser)
-                self.itemsSeen.append(lesser)
+                gSeen = True
+                lSeen = True
 
-                #This should be done whenever something is appended to itemsSeen
-                somethingNew = True
+            somethingNew = False
+            somethingRemoved = False
+            allSeenUpdated = False
 
-        #If the lesser value has been processed before
-        if lSeen:
-
-            #Calculates the value of the lowest ranked box which contains "lesser"
-            if not setBounds:
+            setBounds = False
+            #Checks for an invalid attempt
+            if self.allSeen:
+                highestG = self.getHighestGreater(greater)
                 lowestL = self.getLowestLesser(lesser)
+                setBounds = True
+                #The truth of this boolean defines an invalid attempt, so we return early
+                if highestG >= lowestL:
+                    #NOTE: I have no idea whether this inequality above should contain equals or no.  I think, but uncertain
+                    print("Invalid attempt detected. Returning early.")
+                    return
 
-            #We know that lesser is lower rank than greater, so it can't exist in the highest unfilled spot
-            #This also only applies when greater is in self.itemsLeft
-            if greater in self.itemsLeft:
-                i = 0
-                while ((len(self.boxes[i]) == 1) and (self.boxes[i][0] not in self.itemsLeft)):
-                    i += 1
-                #Note: This could potentially go out of bounds for a completed list
-                if lesser in self.boxes[i]:
-                    self.boxes[i].remove(lesser)
-
-                    #This should be done whenever something is removed from self.boxes
-                    somethingRemoved = True
-
+            #If the greater value has been processed before
             if gSeen:
-                #Removes the greater item from any boxes at or below lowestL
-                for i in range(lowestL, self.numBoxes):
+
+                #Calculates the value of the highest ranked box which contains "greater"
+                if not setBounds:
+                    highestG = self.getHighestGreater(greater)
+
+                #We know that greater is higher rank than lesser, so it can't exist in the lowest unfilled spot
+                #This also only applies when lesser is in self.itemsLeft
+                if lesser in self.itemsLeft:
+                    i = self.numBoxes - 1
+                    while ((len(self.boxes[i]) == 1) and (self.boxes[i][0] not in self.itemsLeft)):
+                        i -= 1
+                    #Note: This could potentially go out of bounds for a completed list
                     if greater in self.boxes[i]:
                         self.boxes[i].remove(greater)
 
                         #This should be done whenever something is removed from self.boxes
                         somethingRemoved = True
 
-            else:
-                for i in range(lowestL - 1, -1):
-                    self.boxes[i].append(greater)
-                self.itemsSeen.append(greater)
+                if lSeen:
+                    #Removes the lesser item from any boxes at or higher than highestG
+                    for i in range(highestG + 1):
+                        if lesser in self.boxes[i]:
+                            self.boxes[i].remove(lesser)
+
+                            #This should be done whenever something is removed from self.boxes
+                            somethingRemoved = True
+
+                else:
+                    for i in range(highestG + 1, self.numBoxes):
+                        self.boxes[i].append(lesser)
+                    self.itemsSeen.append(lesser)
+
+                    #This should be done whenever something is appended to itemsSeen
+                    somethingNew = True
+
+            #If the lesser value has been processed before
+            if lSeen:
+
+                #Calculates the value of the lowest ranked box which contains "lesser"
+                if not setBounds:
+                    lowestL = self.getLowestLesser(lesser)
+
+                #We know that lesser is lower rank than greater, so it can't exist in the highest unfilled spot
+                #This also only applies when greater is in self.itemsLeft
+                if greater in self.itemsLeft:
+                    i = 0
+                    while ((len(self.boxes[i]) == 1) and (self.boxes[i][0] not in self.itemsLeft)):
+                        i += 1
+                    #Note: This could potentially go out of bounds for a completed list
+                    if lesser in self.boxes[i]:
+                        self.boxes[i].remove(lesser)
+
+                        #This should be done whenever something is removed from self.boxes
+                        somethingRemoved = True
+
+                if gSeen:
+                    #Removes the greater item from any boxes at or below lowestL
+                    for i in range(lowestL, self.numBoxes):
+                        if greater in self.boxes[i]:
+                            self.boxes[i].remove(greater)
+
+                            #This should be done whenever something is removed from self.boxes
+                            somethingRemoved = True
+
+                else:
+                    for i in range(lowestL - 1, -1, -1):
+                        self.boxes[i].append(greater)
+                    self.itemsSeen.append(greater)
+
+                    #This should be done whenever something is appended to itemsSeen
+                    somethingNew = True
+
+            #If neither of the values have been processed before
+            if ((not gSeen) and (not lSeen)):
+                for i in range(self.numBoxes - 1):
+                    (self.boxes[i]).append(greater)
+                    (self.boxes[i+1]).append(lesser)
+                (self.itemsSeen).append(greater)
+                (self.itemsSeen).append(lesser)
 
                 #This should be done whenever something is appended to itemsSeen
                 somethingNew = True
 
-        #If neither of the values have been processed before
-        if ((not gSeen) and (not lSeen)):
-            for i in range(self.numBoxes - 1):
-                (self.boxes[i]).append(greater)
-                (self.boxes[i+1]).append(lesser)
-            (self.itemsSeen).append(greater)
-            (self.itemsSeen).append(lesser)
+            #If we just saw something new, check if we've seen everything
+            if ((self.allSeen == False) and (somethingNew)):
+                self.allSeen = ((len(self.itemsSeen)) == (self.numBoxes))
+                allSeenUpdated = self.allSeen
 
-            #This should be done whenever something is appended to itemsSeen
-            somethingNew = True
+            #If all numbers have been seen and something was removed from self.boxes, we attempt to clean up
+            #Turns out somethingRemoved is not a requirement for cleanup.  For example if 4 of 5 items already exist
+            #In the list, there are situations where the 5th one can be added and a box will end up with only 1 item.
+            if ((self.allSeen) and ((somethingRemoved) or (allSeenUpdated))):
+                print("Attempting to clean up the boxes")
+                self.cleanup()
 
-        #If we just saw something new, check if we've seen everything
-        if ((self.allSeen == False) and (somethingNew)):
-            self.allSeen = ((len(self.itemsSeen)) == (self.numBoxes))
-
-        #If all numbers have been seen and something was removed from self.boxes, we attempt to clean up
-        if ((self.allSeen) and (somethingRemoved)):
-            print("Attempting to clean up the boxes")
-            self.cleanup()
+        else:
+            print("List complete. No need for modification.")
 
     def cleanup(self):
         print("Pre-cleanup boxes: " + str(self.boxes))
@@ -341,7 +354,7 @@ class Sudoku:
         return self.itemsLeft
 
 def main():
-    random.seed("Kyle Frederick")
+    #random.seed("69,420")
     theTest = Test()
     fileIn(theTest)
 
@@ -352,10 +365,14 @@ def main():
     #Prints some diagnostic output useful for viewing test results.  Will remove eventually
     for elt in weightList:
         print str(elt[0]) + ". " + str(elt[1]) + "  \t" + str(theTest.getPairs()[elt[0]]) + "  \t" + str(elt[2])
-    print("\n")
 
     theTest.buildDict()
+    print("|================================|\n")
+
+    #Orders the elements based on now-ordered list of weighted comparisons
     theTest.buildSet(weightList)
+    print("Done!  Final ordered list:")
+    print(str(theTest.sudoku.getBoxes()))
 
 def fileIn(test):
     data = open(FILE, 'rb')
@@ -414,15 +431,14 @@ def calcWeight(pairIn):
     isTrue = (trueVotes >= falseVotes)
     total = trueVotes + falseVotes
     theMax = float(max(trueVotes, falseVotes))
+    weight = 0
 
-    #As long as both the true and false votes are not zero
-    if total == 0:
-        deviation = 0
-    else:
+    #As long as both the true and false votes are not zero, weight is nonzero
+    if total != 0:
        deviation  = (theMax / total) - 0.5
 
-    #math.log is base e (ln)
-    weight = deviation * math.log(total)
+       #math.log is base e (ln)
+       weight = deviation * math.log(total)
 
     return [isTrue, weight]
 

@@ -6,6 +6,7 @@ import random
 import csv
 import math
 import scipy.stats
+import numpy
 
 #GLOBAL CONSTANTS
 #Predefined Parameters
@@ -41,7 +42,21 @@ class Comparison:
     def getLesser(self):
         return self.lesser
 
-    #Set function for greater
+        #Set function for trueVotes
+    def setTrueVotes(self, numIn):
+        self.trueVotes = numIn
+    #Get function for trueVotes
+    def getTrueVotes(self):
+        return self.trueVotes
+
+    #Set function for falseVotes
+    def setFalseVotes(self, numIn):
+        self.falseVotes = numIn
+    #Get function for falseVotes
+    def getFalseVotes(self):
+        return self.falseVotes
+
+    #Set function for weight
     def setWeight(self, weightIn):
         self.weight = weightIn
     #Get function for weight
@@ -194,7 +209,7 @@ class Test:
 
         return
 
-    #Determines the sum of weights of comparisons satisfied by a given hasse list
+    #Determines the sum of weights of comparisons satisfied by a given hasse list (using signed weights)
     def sumWeights(self, testHasse):
         theSum = 0
         for comp in self.comparisons:
@@ -211,6 +226,41 @@ class Test:
                 else:
                     theSum -= comp.getWeight()
         return theSum
+
+    #REQUIRES: self.hasse is a completed hasse diagram
+    #Figures out how many votes are unsatisfied and the total number of votes
+    #Returns this as a tuple (satisfied votes, total votes)
+    def populationData(self):
+        implementedVotes = 0
+        totalVotes = 0
+
+        for comp in self.comparisons:
+            greaterNum = comp.getGreater()
+            lesserNum = comp.getLesser()
+            tVotes = comp.getTrueVotes()
+            fVotes = comp.getFalseVotes()
+            numVotes = tVotes + fVotes
+
+            gLoc = self.hasse.index(greaterNum)
+            lLoc = self.hasse.index(lesserNum)
+
+            if greaterNum < lesserNum:
+                condVotes = tVotes
+            else:
+                condVotes = fVotes
+
+            #If this statement is true, then the comparison wasn't implemented in the final list
+            if gLoc > lLoc:
+                condVotes = numVotes - condVotes
+
+            #Updates the values of implementedVotes and totalVotes
+            implementedVotes += condVotes
+            totalVotes += numVotes
+
+        return (implementedVotes, totalVotes)
+
+
+
 
     #Returns the signed weight of the comparison between first and second.
     #If the first item is greater than the second, returns a positive number.  Else, returns a negative.
@@ -260,8 +310,24 @@ class Test:
     def getTotalAllWeights(self):
         return self.totalAllWeights
 
+def testBench():
+    numRounds = 1000
+    ratios = []
+    for i in range(numRounds):
+        ratios.append(main())
+    print("")
+
+    mean = numpy.mean(ratios)
+    maximum = max(ratios)
+    minimum = min(ratios)
+
+    print("After " + str(numRounds) + " rounds...")
+    print("MEAN:\t" + str(mean))
+    print("MIN :\t" + str(minimum))
+    print("MAX :\t" + str(maximum))
+
 def main():
-    random.seed("0")
+    #random.seed("0")
     theTest = Test()
     fileIn(theTest)
     theTest.buildRelationList()
@@ -290,17 +356,16 @@ def main():
     theTest.buildHasse()
     print("FINAL HASSE:")
     print(theTest.hasse)
+    print("")
 
-    #Calculates theSum without subtractions as the average of (that with subtractions and theTotal)
-    theTotal = theTest.getTotalAllWeights()
-    theSum = (theTotal + (theTest.sumWeights(theTest.hasse))) / 2
-
-    print("SUM OF WEIGHTS:")
-    print(theSum)
-    print("TOTAL ALL WEIGHTS:")
-    print(theTotal)
-    print("SATISFACTION RATIO")
-    print(str(theSum / theTotal))
+    result = theTest.populationData()
+    voteSat = result[0]
+    voteTot = result[1]
+    ratio = float(voteSat) / voteTot
+    print("Number of satisfied votes: \t" + str(voteSat))
+    print("Total number of votes: \t\t" + str(voteTot))
+    print("Ratio: \t\t\t\t\t\t" + str(ratio))
+    return ratio
 
 def fileIn(test):
     data = open(FILE, 'rb')
@@ -355,4 +420,4 @@ def calcWeight(tVotes, fVotes):
         weight = deviation * math.log(total)
     return weight
 
-main()
+testBench()

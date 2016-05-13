@@ -48,3 +48,6 @@ Temporary Items
 
 # PyCharm
 .idea
+
+# Django tests
+mysite

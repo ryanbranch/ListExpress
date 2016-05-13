@@ -5,13 +5,21 @@
 import random
 import csv
 import math
-import scipy.stats
 import numpy
 
 #GLOBAL CONSTANTS
 #Predefined Parameters
 FILE = "ProofOfConcept.txt"
 
+#Describes the preferences of a potential user and simulates voting accordingly
+class User:
+    #Default constructor
+    def __init__(self, numItemsIn):
+        self.numItems = numItemsIn
+        self.preference = range(self.numItems)
+        random.shuffle(self.preference)
+
+#Describes the comparison between two different items
 class Comparison:
     #Default constructor
     def __init__(self, trueVotesIn, falseVotesIn, indexIn):
@@ -89,6 +97,7 @@ class Test:
     def __init__(self):
         self.numElts = 0
         self.comparisons = []
+        self.users = []
         self.hasse = []
 
         #relationList is a list of 2-elt tuples, where the tuple represents 2 items being compared
@@ -114,7 +123,7 @@ class Test:
             self.totalAllWeights += newWeight
 
             #Accounts for the order of the relation
-            if (comp.getGreater > comp.getLesser):
+            if (comp.getGreater() > comp.getLesser()):
                 newWeight *= -1
 
             #Accounts for the truth of the relation
@@ -198,7 +207,7 @@ class Test:
 
         #Now that weightSumDict has been built, newElt should be added to self.hasse
         #It is added at the index of the weightSumDict key corresponds to the highest weight
-        for indexKey, weight in weightSumDict.iteritems():
+        for indexKey, weight in weightSumDict.items():
             if weight > maxWeight:
                 maxIdx = indexKey
                 maxWeight = weight
@@ -256,11 +265,7 @@ class Test:
             #Updates the values of implementedVotes and totalVotes
             implementedVotes += condVotes
             totalVotes += numVotes
-
         return (implementedVotes, totalVotes)
-
-
-
 
     #Returns the signed weight of the comparison between first and second.
     #If the first item is greater than the second, returns a positive number.  Else, returns a negative.
@@ -311,7 +316,8 @@ class Test:
         return self.totalAllWeights
 
 def testBench():
-    numRounds = 1000
+    random.seed("0")
+    numRounds = 1
     ratios = []
     for i in range(numRounds):
         ratios.append(main())
@@ -327,10 +333,8 @@ def testBench():
     print("MAX :\t" + str(maximum))
 
 def main():
-    #random.seed("0")
     theTest = Test()
     fileIn(theTest)
-    theTest.buildRelationList()
 
     #Iterates through the dictionary and updates each Comparison with its "definition"
     for i, pair in enumerate(theTest.getRelationList()):
@@ -368,7 +372,7 @@ def main():
     return ratio
 
 def fileIn(test):
-    data = open(FILE, 'rb')
+    data = open(FILE, 'rt')
     reader = csv.reader(data)
     rowNum = 0
     manualMode = False
@@ -387,6 +391,11 @@ def fileIn(test):
                 exit()
         elif rowNum == 1:
             test.setNumElts(int(row[0]))
+
+            #Now that numElts is known, we immediately build the relationList
+            test.buildRelationList()
+
+            #If we're in random mode, we get the max number of votes for true/false of a comparison
             if not manualMode:
                 maxVotes = int(row[1])
 
@@ -404,7 +413,7 @@ def fileIn(test):
 
 #Returns the number of rows necessary for this program to represent an NxN matrix as a ROWSx2 matrix
 def getNumMatrixRows(sideLength):
-    return ((sideLength * sideLength - sideLength) / 2)
+    return ((sideLength * sideLength - sideLength) // 2)
 
 #This function calculates the weight of a comparison based on the vote information
 def calcWeight(tVotes, fVotes):

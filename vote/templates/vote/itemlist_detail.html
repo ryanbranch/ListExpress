@@ -1,0 +1,16 @@
+{% extends 'vote/base.html' %}
+
+{% block content %}
+    <div class="itemlist">
+        {% if itemlist.published_date %}
+            <div class="date">
+                {{ itemlist.published_date }}
+            </div>
+        {% endif %}
+        {% if user.is_authenticated %}
+            <a class="btn btn-default" href="{% url 'itemlist_edit' pk=itemlist.pk %}"><span class="glyphicon glyphicon-pencil"></span></a>
+        {% endif %}
+        <h1>{{ itemlist.title }}</h1>
+        <p>{{ itemlist.items|linebreaks }}</p>
+    </div>
+{% endblock %}

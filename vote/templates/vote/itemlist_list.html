@@ -1,0 +1,9 @@
+{% extends 'vote/base.html' %}
+
+{% block content %}
+    {% for itemlist in itemlists %}
+        <div class="itemlist">
+        <h3><a href="{% url 'itemlist_detail' pk=itemlist.pk %}">{{ itemlist.title }}</a></h3>
+        </div>
+    {% endfor %}
+{% endblock %}

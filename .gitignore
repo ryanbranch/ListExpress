@@ -50,4 +50,7 @@ Temporary Items
 .idea
 
 # Django tests
-mysite
+tut
+
+# Python Extras
+*.pyc

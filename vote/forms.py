@@ -6,4 +6,4 @@ class ItemListForm(forms.ModelForm):
 
     class Meta:
         model = ItemList
-        fields = ('title', 'items',)
+        fields = ('title', 'list_text',)

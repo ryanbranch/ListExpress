@@ -11,6 +11,6 @@
             <a class="btn btn-default" href="{% url 'itemlist_edit' pk=itemlist.pk %}"><span class="glyphicon glyphicon-pencil"></span></a>
         {% endif %}
         <h1>{{ itemlist.title }}</h1>
-        <p>{{ itemlist.items|linebreaks }}</p>
+        <p>{{ itemlist.list_text|linebreaks }}</p>
     </div>
 {% endblock %}

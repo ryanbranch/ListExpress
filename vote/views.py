@@ -10,6 +10,7 @@ def itemlist_list(request):
     
 def itemlist_detail(request, pk):
     itemlist = get_object_or_404(ItemList, pk=pk)
+    itemlist.makeItemDict()
     return render(request, 'vote/itemlist_detail.html', {'itemlist': itemlist})
     
 def itemlist_new(request):
@@ -35,6 +36,9 @@ def itemlist_edit(request, pk):
             itemlist.published_date = timezone.now()
             itemlist.save()
             return redirect('itemlist_detail', pk=itemlist.pk)
+            
+            #Technically this isn't necessary unless the form is used to actually change content
+            itemlist.madeItemDict = False
     else:
         form = ItemListForm(instance=itemlist)
     return render(request, 'vote/itemlist_edit.html', {'form': form})

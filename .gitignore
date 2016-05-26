@@ -52,5 +52,12 @@ Temporary Items
 # Django tests
 tut
 
+# Django data
+db.sqlite3
+migrations
+
 # Python Extras
 *.pyc
+
+# Other
+temp

@@ -1,0 +1,20 @@
+{% extends 'listexpress/base.html' %}
+
+{% block content %}
+    <h1>List: {{ itemlist.list_name }}</h1>
+    <h3>Items</h3>
+    {% for item in items %}
+        <li>{{ item.item_name }}</li>
+    {% endfor %}
+    {% if itemlist.fully_defined %}
+        <h3>Comparisons</h3>
+        {% for comparison in comparisons %}
+            <li>{{ comparison.comparison_name }}</li>
+        {% endfor %}
+    {% else %}
+        <h3>Comparisons have not yet been built.</h3>
+        {% if userOwnsList %}
+            <p>You created this list!</p>
+        {% endif %}
+    {% endif %}
+{% endblock %}

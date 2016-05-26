@@ -1,0 +1,13 @@
+{% extends 'listexpress/base.html' %}
+
+{% block content %}
+    {% if itemlists %}
+        <h3>Lists:</h3>
+        {% for itemlist in itemlists %}
+            <li><a href="{% url 'listexpress:listdetail' itemlist.id %}">{{ itemlist.list_name }}</a></li>
+        {% endfor %}
+    {% else %}
+        <h3>No ItemList objects exist yet.</h3>
+    {% endif %}
+    
+{% endblock %}

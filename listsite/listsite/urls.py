@@ -13,9 +13,14 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from django.conf.urls import url
+from django.conf.urls import include, url
+import django.contrib.auth.views
+
 from django.contrib import admin
+admin.autodiscover()
 
 urlpatterns = [
+    url(r'', include('listexpress.urls')),
     url(r'^admin/', admin.site.urls),
+    url(r'^accounts/login/$', django.contrib.auth.views.login, name='login'),
 ]

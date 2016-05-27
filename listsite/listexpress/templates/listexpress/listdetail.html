@@ -2,6 +2,17 @@
 
 {% block content %}
     <h1>List: {{ itemlist.list_name }}</h1>
+    
+    {% if itemlist.fully_defined %}
+        <h1><a href="{% url 'listexpress:comparisonvote' itemlist.id %}">Vote!</a></h1>
+    {% else %}
+        {% if userOwnsList %}
+            <h3>People will be able to vote once you build comparisons for this list.</h3>
+        {% else %}
+            <h3>You will be able to vote once the list creator finalizes this list.</h3>
+        {% endif %}
+    {% endif %}
+    
     <h3>Items</h3>
     {% for item in items %}
         <li>{{ item.item_name }}</li>
@@ -14,7 +25,7 @@
     {% else %}
         <h3>Comparisons have not yet been built.</h3>
         {% if userOwnsList %}
-            <p>You created this list!</p>
+            <p>You created this list! <a href="{% url 'listexpress:buildcomparisons' itemlist.id %}">Want to build comparisons now?</a></p>
         {% endif %}
     {% endif %}
 {% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'listexpress/base.html' %}
+
+{% block content %}
+    <h1>Voting on list: {{ itemlist.list_name }}</h1>
+    <h3>Comparison: {{ itemcomparison.comparison_name }}</h3>
+    <h1><a href="{% url 'listexpress:comparisonvote' itemlist.id itemcomparison.id 1 %}">{{ item1.item_name }} is better!</a></h1>
+    <h1><a href="{% url 'listexpress:comparisonvote' itemlist.id itemcomparison.id 2 %}">{{ item2.item_name }} is better!</a></h1>
+    <h1><a href="{% url 'listexpress:comparisonvote' itemlist.id %}">I don't care.</a></h1>
+    
+    <p><a href="{% url 'listexpress:listdetail' itemlist.id %}">Return to list: {{ itemlist.list_name }}</a></p>
+{% endblock %}

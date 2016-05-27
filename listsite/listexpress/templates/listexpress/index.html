@@ -10,4 +10,15 @@
         <h3>No ItemList objects exist yet.</h3>
     {% endif %}
     
+    {% if user %}
+        {% if user_itemlists %}
+            <h3>Your lists:</h3>
+            {% for user_itemlist in user_itemlists %}
+                <li><a href="{% url 'listexpress:listdetail' user_itemlist.id %}">{{ user_itemlist.list_name }}</a></li>
+            {% endfor %}
+        {% else %}
+            <h3>You haven't made any lists yet.</h3>
+        {% endif %}
+    {% endif %}
+    
 {% endblock %}

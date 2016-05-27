@@ -1,0 +1,13 @@
+{% extends 'listexpress/base.html' %}
+
+{% block content %}
+    <h1>List: {{ itemlist.list_name }}</h1>
+    <p><a href="{% url 'listexpress:listdetail' itemlist.id %}">Return to your list: {{ itemlist.list_name }}</a></p>
+    <h3>Successfuly built comparisons:</h3>
+    <ul>
+        {% for itemcomparison in itemcomparisons %}
+            <li>{{ itemcomparison.comparison_name }}</li>
+        {% endfor %}
+    </ul>
+    <p><a href="{% url 'listexpress:listdetail' itemlist.id %}">Return to your list: {{ itemlist.list_name }}</a></p>
+{% endblock %}

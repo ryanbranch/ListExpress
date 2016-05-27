@@ -14,6 +14,7 @@ class ItemList(models.Model):
     member = models.ForeignKey(Member, on_delete=models.CASCADE)
     list_name = models.CharField(max_length=200, default='UNNAMED LIST')
     num_items = models.IntegerField(default=None, blank=True, null=True)
+    num_comparisons = models.IntegerField(default=None, blank=True, null=True)
     fully_defined = models.BooleanField(default=False)
 
     def __str__(self):

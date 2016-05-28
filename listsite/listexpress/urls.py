@@ -13,6 +13,6 @@ urlpatterns = [
     url(r'^list/(?P<itemlist_id>[0-9]+)/comparisonvote/$', views.comparisonvote, name='comparisonvote'),
     # ex: /list/5/comparisonvote with votedComparison_id and vote specified
     url(r'^list/(?P<itemlist_id>[0-9]+)/comparisonvote/(?P<votedComparison_id>[0-9]+)/(?P<vote>[0-9]?)/$', views.comparisonvote, name='comparisonvote'),
-    #url(r'^blog/$', views.page),
-    #url(r'^blog/page(?P<num>[0-9]+)/$', views.page),
+    # ex: /list/5/buildcomparisons
+    url(r'^list/(?P<itemlist_id>[0-9]+)/orderlist/$', views.buildcomparisons, name='orderlist'),
 ]

@@ -1,6 +1,7 @@
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, get_list_or_404, render
 from .models import ItemList, Item, ItemComparison
+from .Concept import *
 from django.contrib.auth.decorators import login_required
 import random
 
@@ -35,12 +36,24 @@ def listdetail(request, itemlist_id):
 
     #Gets the ItemList and Item information
     itemlist = get_object_or_404(ItemList, pk=itemlist_id)
-    items = itemlist.item_set.all()
+    items = itemlist.item_set.order_by('order_index', 'id')
     context['itemlist'] = itemlist
     context['items'] = items
     if itemlist.fully_defined:
         comparisons = itemlist.itemcomparison_set.all()
         context['comparisons'] = comparisons
+
+        #Checks if each comparison has been voted on at least numItems times
+        #Note: numItems may not be a good threshold as list size increases but I'm not sure.
+        #For this reason, I'm keeping track of total votes as well.
+        canOrder = True
+        numItems = itemlist.num_items
+        totalVotes = 0
+        for comparison in comparisons:
+            comparisonVotes = comparison.true_votes + comparison.false_votes
+            if ((canOrder) and (comparisonVotes < numItems)):
+                canOrder = False
+            totalVotes += comparisonVotes
 
     #Determines if the ItemList was created by the User
     userOwnsList = False
@@ -50,6 +63,53 @@ def listdetail(request, itemlist_id):
     context['userOwnsList'] = userOwnsList
 
     return render(request, 'listexpress/listdetail.html', context)
+
+@login_required
+def orderlist(request, itemlist_id):
+    context = {}
+
+    #Gets the ItemList information
+    itemlist = get_object_or_404(ItemList, pk=itemlist_id)
+
+    #Ensure that the user calling this view is the owner of the list
+    user = request.user
+    creator = itemlist.member.user
+    if user != creator:
+        return HttpResponseForbidden('<h1>You are not authorized to request the ordering of a list which you did not create</h1>')
+    else:
+        userOwnsList = True
+
+        #Gets lists of ItemComparison objects, and of Item objects, from the ItemList. Also initiates the "Test"
+        #NOTE: Down the line, I should rename anything in Concept.py which implies that the file is simply a test
+        items = itemlist.item_set.all()
+        comparisons = itemlist.itemcomparison_set.all()
+        test = Test()
+
+        #Populates test with data from the ItemComparison objects
+        for i, itemComparison in enumerate(comparisons):
+
+            #NOTE: This might be backwards (switch the vote order if the list is ordered backwards)
+            test.addComparison(Comparison(itemComparison.true_votes, itemComparison.false_votes, i))
+
+        #Gets the resultant Hasse list from test
+        hasse = processTest(test)
+
+        #Reassigns the order_index values for each Item in items, according to hasse.
+        for i, hasseVal in enumerate(hasse):
+            items[hasseVal].order_index = i
+
+        #Saves each Item
+        for item in items:
+            item.save()
+
+        #Populates context.
+        #(NOTE:) This is done in the same fashion as listdetail() because the same information is known
+        context['itemlist'] = itemlist
+        context['items'] = items
+        context['comparisons'] = comparisons
+        context['userOwnsList'] = userOwnsList
+
+        return render(request, 'listexpress/listdetail.html', context)
 
 def comparisonvote(request, itemlist_id, votedComparison_id=None, vote=None):
     context = {}

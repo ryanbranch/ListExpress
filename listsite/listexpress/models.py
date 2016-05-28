@@ -24,6 +24,7 @@ class Item(models.Model):
     created_date = models.DateTimeField(default=timezone.now)
     itemlist = models.ForeignKey(ItemList, on_delete=models.CASCADE)
     item_name = models.CharField(max_length=100, default='UNNAMED ITEM')
+    order_index = models.IntegerField(default=0)
 
     def __str__(self):
         return self.item_name

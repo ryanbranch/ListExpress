@@ -14,14 +14,34 @@
     {% endif %}
     
     <h3>Items</h3>
+    {% if userOwnsList %}
+        <p>You created this list! <a href="{% url 'listexpress:orderlist' itemlist.id %}">Want to order it based on current vote data?</a></p>
+    {% endif %}
     {% for item in items %}
         <li>{{ item.item_name }}</li>
     {% endfor %}
+    
+    
     {% if itemlist.fully_defined %}
         <h3>Comparisons</h3>
-        {% for comparison in comparisons %}
-            <li>{{ comparison.comparison_name }}</li>
-        {% endfor %}
+        <table class = "table">
+            <thead>
+                <th>Comparison</th>
+                <th>Votes for 1</th>
+                <th>Votes for 2</th>
+            </thead>
+            <tbody>
+                {% for comparison in comparisons %}
+                    <tr>
+                        <td>{{ comparison.comparison_name }}</td>
+                        {% if userOwnsList %}
+                            <td>{{ comparison.true_votes }}</td>
+                            <td>{{ comparison.false_votes }}</td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     {% else %}
         <h3>Comparisons have not yet been built.</h3>
         {% if userOwnsList %}

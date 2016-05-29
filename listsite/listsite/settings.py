@@ -32,7 +32,6 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'listexpress.apps.ListexpressConfig',
-    'Concept.py'
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

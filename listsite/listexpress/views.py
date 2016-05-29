@@ -76,14 +76,19 @@ def orderlist(request, itemlist_id):
     creator = itemlist.member.user
     if user != creator:
         return HttpResponseForbidden('<h1>You are not authorized to request the ordering of a list which you did not create</h1>')
+    elif not itemlist.fully_defined:
+        return HttpResponseForbidden('<h1>A list cannot be ordered before comparisons are built</h1>')
     else:
         userOwnsList = True
 
-        #Gets lists of ItemComparison objects, and of Item objects, from the ItemList. Also initiates the "Test"
+        #Gets lists of ItemComparison objects, and of Item objects, from the ItemList.
         #NOTE: Down the line, I should rename anything in Concept.py which implies that the file is simply a test
         items = itemlist.item_set.all()
         comparisons = itemlist.itemcomparison_set.all()
+
+        #Initializes the Test object and sets the appropriate numElts value
         test = Test()
+        test.setNumElts(len(items))
 
         #Populates test with data from the ItemComparison objects
         for i, itemComparison in enumerate(comparisons):
@@ -169,8 +174,6 @@ def buildcomparisons(request, itemlist_id):
         numItems = items.count()
         numComparisons = itemlist.itemcomparison_set.count()
         itemlist.fully_defined = ((numComparisons) == ((numItems * numItems - numItems) / 2))
-        print("FULLY DEFINED:" + str(itemlist.fully_defined))
-
         #If the comparisons have not been built yet or were built incorrectly
         if not itemlist.fully_defined:
             for i in range(numItems - 1):
@@ -181,6 +184,8 @@ def buildcomparisons(request, itemlist_id):
                                                                         " vs. " +
                                                                         items[j].item_name))
             itemlist.num_items = numItems
+            numComparisons = itemlist.itemcomparison_set.count()
+            itemlist.num_comparisons = numComparisons
             itemlist.fully_defined = True
             itemlist.save()
             itemcomparisons = itemlist.itemcomparison_set.all()

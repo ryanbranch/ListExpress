@@ -18,7 +18,7 @@ class Comparison:
         self.relationTrue = (self.trueVotes >= self.falseVotes)
 
     #This function calculates the weight of a comparison based on the vote information
-    def calcWeight(tVotes, fVotes):
+    def calcWeight(self, tVotes, fVotes):
         total = tVotes + fVotes
         theMax = float(max(tVotes, fVotes))
         weight = 0
@@ -109,7 +109,7 @@ class Test:
         self.totalAllWeights = 0
 
     #Returns the number of rows necessary for this program to represent an NxN matrix as a ROWSx2 matrix
-    def getNumMatrixRows(sideLength):
+    def getNumMatrixRows(self, sideLength):
         return ((sideLength * sideLength - sideLength) // 2)
 
     #Populates the relation list based on number of elements (Forward direction).
@@ -320,6 +320,8 @@ class Test:
         
 def processTest(theTest):
 
+    theTest.buildRelationList()
+
     #Iterates through the dictionary and updates each Comparison with its "definition"
     for i, pair in enumerate(theTest.getRelationList()):
         if (((theTest.getComparisons())[i]).getRelationTrue()):
@@ -328,7 +330,12 @@ def processTest(theTest):
         else:
             greaterVal = pair[1]
             lesserVal = pair[0]
+
+        print("GREATER: " + str(greaterVal))
+        print("LESSER: " + str(lesserVal))
+
         theTest.getComparisons()[i].setGreater(greaterVal)
+        theTest.getComparisons()[i].setLesser(lesserVal)
         
     #Before sorting comparisons, builds relationDict
     theTest.buildRelationDict()
@@ -337,10 +344,10 @@ def processTest(theTest):
     theTest.setComparisons(sorted(theTest.getComparisons(), key=lambda comp: comp.getWeight(), reverse=True))
     theTest.getComparisons()[i].setLesser(lesserVal)
         
-    theHasse = theTest.buildHasse()
+    theTest.buildHasse()
     
     #NOTE: Extraneous printing statements, just here for confirmation purposes.
     print("FINAL HASSE:")
-    print(theHasse)
+    print(theTest.hasse)
     
-    return theHasse
+    return theTest.hasse

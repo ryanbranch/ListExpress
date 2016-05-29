@@ -14,7 +14,7 @@
     {% endif %}
     
     <h3>Items</h3>
-    {% if userOwnsList %}
+    {% if userOwnsList and itemlist.fully_defined %}
         <p>You created this list! <a href="{% url 'listexpress:orderlist' itemlist.id %}">Want to order it based on current vote data?</a></p>
     {% endif %}
     {% for item in items %}
